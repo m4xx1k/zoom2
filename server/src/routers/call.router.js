@@ -1,0 +1,10 @@
+const { Router } = require('express')
+const { CallController } = require('../controllers/call.controller')
+// const { withAuth } = require('../middlewares/auth.middleware')
+const router = Router()
+router.post('/', CallController.create)
+router.post('/answer', CallController.setAnswer)
+router.post('/add-answer', CallController.addAnswer)
+router.get('/latest-call/:id', CallController.findLatestCall)
+router.get('/:id', CallController.findById)
+module.exports = { CallRouter: router }

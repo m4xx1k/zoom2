@@ -1,0 +1,29 @@
+{
+	"project_info": {
+		"project_number": "962241146128",
+		"project_id": "fhunt-zoom",
+		"storage_bucket": "fhunt-zoom.appspot.com"
+	},
+	"client": [
+		{
+			"client_info": {
+				"mobilesdk_app_id": "1:962241146128:android:43f04fd1c6263c03690995",
+				"android_client_info": {
+					"package_name": "com.m4xx1k.mob"
+				}
+			},
+			"oauth_client": [],
+			"api_key": [
+				{
+					"current_key": "AIzaSyBLEwNFbzL3BFjmphSnyNSCKcfyk2ueHY0"
+				}
+			],
+			"services": {
+				"appinvite_service": {
+					"other_platform_oauth_client": []
+				}
+			}
+		}
+	],
+	"configuration_version": "1"
+}
