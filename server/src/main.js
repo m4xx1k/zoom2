@@ -8,7 +8,9 @@ const { ApiRouter } = require('./routers/index')
 const { createServer } = require('http')
 const { CallService } = require('./services/call.service')
 const { UserService } = require('./services/user.service')
+const fs = require('fs')
 dotenv.config()
+
 const axios = require('axios')
 async function bootstrap() {
   await connectDB()
@@ -20,7 +22,12 @@ async function bootstrap() {
       origin: '*'
     }
   })
-
+  // httpServer.on('error', (error) => {
+  httpServer.use = morgan(
+    morgan('common', {
+      stream: fs.createWriteStream('./socket.log', { flags: 'a' })
+    })
+  )
   httpServer.listen(4000)
   io.on('connection', (socket) => {
     log(`[socket]: New connection ${socket.id}`)
@@ -98,6 +105,11 @@ async function bootstrap() {
       console.log(`[socket]: ${socket.id} disconnected`)
     })
   })
+  app.use(
+    morgan('common', {
+      stream: fs.createWriteStream('./access.log', { flags: 'a' })
+    })
+  )
   app.use(morgan('dev'))
   app.use(
     cors({

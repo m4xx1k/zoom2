@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router'
 
 import { useEffect, useRef, useState } from 'react'
-import { Alert } from 'react-native'
 import {
 	MediaStream,
 	RTCPeerConnection,
@@ -17,6 +16,9 @@ export const useWebRtcCall = (id: string) => {
 	const [localStream, setLocalStream] = useState<MediaStream>(new MediaStream())
 	const [remoteStream, setRemoteStream] = useState<MediaStream>(
 		new MediaStream()
+	)
+	const [status, setStatus] = useState<RTCPeerConnectionState | 'calling' | ''>(
+		id.startsWith('caller') ? 'calling' : ''
 	)
 	const { user } = useUserStore()
 	const [isConnected, setIsConnected] = useState(false)
@@ -43,9 +45,8 @@ export const useWebRtcCall = (id: string) => {
 		socket.disconnect()
 		socket.connect()
 	}
-
+	;``
 	const handleCreateCall = async () => {
-		// await initLocalStreams()
 		socket.emit('call-create', { from: user._id })
 	}
 
@@ -57,7 +58,6 @@ export const useWebRtcCall = (id: string) => {
 		//caller
 		socket.off('call-created').on('call-created', (call: Call) => {
 			log(JSON.stringify(call))
-			Alert.alert('Call created', 'You can now join the call')
 		})
 		// caller
 		socket.off('call-joined').on('call-joined', async (call: Call) => {
@@ -138,15 +138,27 @@ export const useWebRtcCall = (id: string) => {
 		}
 	}, [])
 
-	const hangUp = async () => {
+	const hangUp = () => {
+		setIsConnected(false)
+
+		log('HANG UP', `${isOffCam}`)
+		if (localStream) {
+			localStream.getTracks().forEach(track => {
+				track.enabled = false
+				track._enabled = false
+			})
+			localStream.getTracks().forEach(track => track.stop())
+		}
 		if (peerConnections.current) {
 			const senders = peerConnections.current.getSenders()
 			senders.forEach(sender => {
 				peerConnections.current && peerConnections.current.removeTrack(sender)
 			})
+			peerConnections.current.getTransceivers().forEach(transceiver => {
+				transceiver.stop()
+			})
 			peerConnections.current.close()
 		}
-		setIsConnected(false)
 		peerConnections.current = null
 		setLocalStream(null)
 		setRemoteStream(null)
@@ -166,29 +178,32 @@ export const useWebRtcCall = (id: string) => {
 		const init = async () => {
 			registerGlobals()
 			const peer = new RTCPeerConnection(servers)
-			peer.addEventListener('connectionstatechange', event => {
+			peer.addEventListener('connectionstatechange', async () => {
 				const state = peerConnections.current?.connectionState
 				if (!state) return
 				console.log(` [ ${state} ] `.toUpperCase())
 				const isDisconnected = ['disconnected', 'failed', 'closed'].includes(
 					state
 				)
+				setStatus(state)
 				const isConnected = state === 'connected'
-				if (isDisconnected) hangUp()
-				if (isConnected) {
-					const DATE_ON_CONNECTED = new Date(new Date().toUTCString()).getTime()
-					setIsConnected(true)
-				}
+				if (isDisconnected) setIsConnected(null)
+				if (isConnected) setIsConnected(true)
 			})
 			peerConnections.current = peer
 			setRemoteStream(new MediaStream())
 			await initLocalStreams()
-			log(id)
-			if (id !== 'caller') await handleJoinCall()
+			log('INIT WEB RTC', id)
+			if (!id.startsWith('caller')) await handleJoinCall()
 			// await answerCall()
 		}
 		init()
-	}, [])
+	}, [id])
+	useEffect(() => {
+		if (isConnected === null) {
+			hangUp()
+		}
+	}, [isConnected])
 
 	const switchCamera = () => {
 		localStream &&
@@ -196,16 +211,18 @@ export const useWebRtcCall = (id: string) => {
 	}
 
 	const toggleMute = () => {
-		if (!remoteStream || !localStream) return
+		if (!localStream) return
 		localStream.getAudioTracks().forEach(track => {
 			track.enabled = !track.enabled
 			setIsMuted(!track.enabled)
 		})
 	}
 
-	const toggleCamera = async () => {
+	const toggleCamera = () => {
+		console.log(`'is local stream ${!!localStream}'`)
 		if (!localStream) return
 		localStream.getVideoTracks().forEach(track => {
+			log('TOGGLE CAMERA', `${track.enabled}`)
 			track.enabled = !track.enabled
 			setIsOffCam(!isOffCam)
 		})
@@ -236,6 +253,7 @@ export const useWebRtcCall = (id: string) => {
 			isMuted,
 			isOffCam,
 			isConnected,
+			status,
 		},
 	}
 }

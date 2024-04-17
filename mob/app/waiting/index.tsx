@@ -18,7 +18,7 @@ const NewCall = () => {
 	const handleCreateCall = async () => {
 		// await initLocalStreams()
 		socket.emit('call-create', { from: user._id, to: calleeIndex })
-		router.push('/logined/' + 'caller')
+		router.push('/logined/' + `caller-${new Date().getTime()}`)
 	}
 	useEffect(() => {
 		if (!socket.connected) {

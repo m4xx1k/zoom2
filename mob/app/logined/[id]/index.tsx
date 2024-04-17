@@ -13,16 +13,35 @@ const call = () => {
 		if (!socket.connected) {
 			socket.connect()
 		}
+		return () => {
+			handlers.hangUp()
+		}
 	}, [])
 
 	return (
 		<SafeAreaView style={styles.container}>
-			{streams.remote && (
+			{streams.remote && state.isConnected && (
 				<RTCView
 					style={styles.remoteStream}
 					streamURL={streams.remote.toURL()}
 					objectFit={'cover'}
 				/>
+			)}
+			{!state.isConnected && (
+				<View
+					style={{
+						...styles.remoteStream,
+						alignItems: 'center',
+						justifyContent: 'center',
+						backgroundColor: 'lightgray',
+					}}
+				>
+					<Text style={styles.status}>
+						{state.status === 'connecting' && '🔄 Connecting '}
+						{state.status === 'calling' && '⌛ Calling '}
+						...
+					</Text>
+				</View>
 			)}
 			{streams.local && (
 				<RTCView
@@ -53,6 +72,10 @@ const call = () => {
 	)
 }
 const styles = StyleSheet.create({
+	status: {
+		fontSize: 20,
+		fontWeight: '500',
+	},
 	control: {
 		flexDirection: 'row',
 		justifyContent: 'space-around',
